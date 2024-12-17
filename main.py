@@ -4,6 +4,7 @@ from config import bot, dp, Admins
 import logging
 from handlers import commands, echo, quiz, fsm_reg, fsm_shop
 import buttons
+from db import main_db
 
 
 async def on_startup(_):
@@ -11,8 +12,12 @@ async def on_startup(_):
         await bot.send_message(chat_id=admin, text='Бот запущен!',
                                reply_markup=buttons.start_markup)
 
+        await main_db.dataBase_create()
+
+
 async def on_shutdown(_):
-    await bot.send_message(chat_id=5576961334, text='Бот остановлен!')
+    for admin in Admins:
+        await bot.send_message(chat_id=admin, text='Бот остановлен!')
 
 commands.register_commands_handlers(dp)
 quiz.register_quiz_handlers(dp)
