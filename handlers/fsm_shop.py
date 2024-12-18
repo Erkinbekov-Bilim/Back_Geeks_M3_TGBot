@@ -17,6 +17,7 @@ class FSMShop(StatesGroup):
     product_id = State()
     product_info = State()
     product_photo = State()
+    product_collection = State()
     product_submit = State()
 
 
@@ -74,6 +75,13 @@ async def load_product_photo(message: types.Message, state: FSMContext):
         data["product_photo"] = message.photo[-1].file_id
 
     await FSMShop.next()
+    await message.answer('Отправьте коллекцию товара:')
+
+async def load_product_collection(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["product_collection"] = message.text
+
+    await FSMShop.next()
     await message.answer(f'Верны ли данные?', reply_markup=submit)
     await message.answer_photo(photo=data["product_photo"],
                                caption=f'Название товара - {data["product_name"]}\n'
@@ -82,6 +90,7 @@ async def load_product_photo(message: types.Message, state: FSMContext):
                                f'Цена товара - {data["product_price"]}\n'
                                f'Артикул товара - {data["product_id"]}\n'
                                f'Информация о товаре - {data["product_info"]}\n'
+                               f'Коллекция товара - {data["product_collection"]}'
                                )
 
 
@@ -102,6 +111,12 @@ async def load_submit(message: types.Message, state: FSMContext):
                 product_info=data["product_info"],
                 product_id=data["product_id"]
             )
+
+            await main_db.sql_insert_collection_products(
+                product_id=data["product_id"],
+                product_collection=data["product_collection"]
+            )
+
             await message.answer("Ваши данные в базе!", reply_markup=start_markup)
             await state.finish()
 
@@ -131,6 +146,7 @@ def register_handlers_fsm_shop(dp: Dispatcher):
     dp.register_message_handler(load_product_id, state=FSMShop.product_id)
     dp.register_message_handler(load_product_info, state=FSMShop.product_info)
     dp.register_message_handler(load_product_photo, content_types=['photo'], state=FSMShop.product_photo)
+    dp.register_message_handler(load_product_collection, state=FSMShop.product_collection)
     dp.register_message_handler(load_submit, state=FSMShop.product_submit)
 
 
